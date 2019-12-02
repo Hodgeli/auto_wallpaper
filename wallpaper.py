@@ -1,6 +1,8 @@
 # coding=utf-8
 import random
 import re
+
+import os
 import requests
 import win32api
 import win32con
@@ -8,13 +10,16 @@ import win32gui
 
 
 def get_img_full_url():
-    search_url = 'https://wallhaven.cc/search?q=%s&categories=111&purity=100&atleast=1600x900&ratios=16x9&sorting=favorites&order=desc&page=%s'
-    categories = ['nature', 'universe', 'HD%20wallpaper', 'fruit', 'animals', 'DC%20Comics', 'sword', 'samurai',
+    search_url = 'https://wallhaven.cc/search?q=%s&categories=111&purity=100&atleast=%sx%s&ratios=16x9&sorting=favorites&order=desc&page=%s'
+    categories = ['nature', 'universe', 'one%20day', 'Tom%20Hiddleston', 'HD%20wallpaper', 'fruit', 'animals',
+                  'DC%20Comics', 'sword', 'samurai',
                   'digital%20art', 'anime', 'Naruto', 'artwork', 'space', 'planet', 'spaceship', 'futuristic',
                   'mountains', 'machine', 'robot', 'cyberpunk', 'metal', 'cat', 'helmet', 'Monkey%20D.%20Luffy',
                   'Roronoa%20Zoro']
     list_page_id = [1, 2, 3, 4, 5]
-    search_url = search_url % (random.choice(categories), str(random.choice(list_page_id)))
+    x = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)
+    y = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)
+    search_url = search_url % (random.choice(categories), str(x), str(y), str(random.choice(list_page_id)))
     response = requests.get(search_url)
 
     if response.status_code == 200:
@@ -29,6 +34,7 @@ def get_img_full_url():
 
 
 def download_img(img_full_url):
+    # down_path = os.getcwd() + u"\wallpaper\\"
     down_path = "G:" + u"\壁纸\\"
     try:
         response = requests.get(img_full_url)
@@ -42,6 +48,8 @@ def download_img(img_full_url):
 
                 response_img = requests.get(img_final_url)
                 if response.status_code == 200:
+                    if not os.path.exists(down_path):
+                        os.mkdir(down_path)
                     with open(pic_path, 'wb') as file:
                         file.write(response_img.content)
                     return pic_path
