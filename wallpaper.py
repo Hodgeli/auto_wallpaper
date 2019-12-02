@@ -7,45 +7,48 @@ import win32con
 import win32gui
 
 
-def get_img_id():
-    search_url = 'https://alpha.wallhaven.cc/search?q=%s&purity=100&ratios=16x9&sorting=relevance&order=desc&page=%s'
-    categories = ['nature', 'universe', 'car', 'HD wallpaper', 'fruit', 'animals', 'DC Comics', 'sword', 'samurai',
-                  'digital art', 'anime', 'Naruto', 'artwork', 'space', 'planet', 'spaceship', 'futuristic',
-                  'mountains', 'machine', 'robot', 'cyberpunk', 'metal', 'cat', 'helmet', 'Monkey D. Luffy',
-                  'Roronoa Zoro']
+def get_img_full_url():
+    search_url = 'https://wallhaven.cc/search?q=%s&categories=111&purity=100&atleast=1600x900&ratios=16x9&sorting=favorites&order=desc&page=%s'
+    categories = ['nature', 'universe', 'HD%20wallpaper', 'fruit', 'animals', 'DC%20Comics', 'sword', 'samurai',
+                  'digital%20art', 'anime', 'Naruto', 'artwork', 'space', 'planet', 'spaceship', 'futuristic',
+                  'mountains', 'machine', 'robot', 'cyberpunk', 'metal', 'cat', 'helmet', 'Monkey%20D.%20Luffy',
+                  'Roronoa%20Zoro']
     list_page_id = [1, 2, 3, 4, 5]
     search_url = search_url % (random.choice(categories), str(random.choice(list_page_id)))
     response = requests.get(search_url)
 
-    rule = r'data-wallpaper-id="(.*?)" style'
-    list_id = re.findall(rule, response.text)
-    if len(list_id) >= 1:
-        return random.choice(list_id)
+    if response.status_code == 200:
+        rule = r'class="preview" href="(.*?)"'
+        list_full_url = re.findall(rule, response.text)
+        if len(list_full_url) >= 1:
+            return random.choice(list_full_url)
+        else:
+            return 0
     else:
         return 0
 
 
-def download_img(id):
-    base_url = 'https://wallpapers.wallhaven.cc/wallpapers/full/wallhaven-%s.%s'
+def download_img(img_full_url):
     down_path = "G:" + u"\壁纸\\"
     try:
-        pic_path = down_path + id + '.jpg'
-        img_url = base_url % (id, 'jpg')
-        response = requests.get(img_url)
-        if response.status_code == 404:
-            pic_path = down_path + id + '.png'
-            img_url = base_url % (id, 'png')
-            response = requests.get(img_url)
-            if response.status_code == 200:
-                with open(pic_path, 'wb') as file:
-                    file.write(response.content)
-                return pic_path
+        response = requests.get(img_full_url)
+
+        if response.status_code == 200:
+            rule = r'id="wallpaper" src="(.*?)"'
+            img_final_url = re.findall(rule, response.text)[0]
+            if img_final_url:
+                img_name = str(img_final_url).split("/")[-1]
+                pic_path = down_path + img_name
+
+                response_img = requests.get(img_final_url)
+                if response.status_code == 200:
+                    with open(pic_path, 'wb') as file:
+                        file.write(response_img.content)
+                    return pic_path
+                else:
+                    return 0
             else:
                 return 0
-        elif response.status_code == 200:
-            with open(pic_path, 'wb') as file:
-                file.write(response.content)
-            return pic_path
         else:
             return 0
     except:
@@ -64,10 +67,13 @@ def set_wallpaper(path):
 
 
 if __name__ == '__main__':
-    while 1:
-        img_id = get_img_id()
-        if img_id != 0:
-            pic_path = download_img(img_id)
+    flag = 0
+    while flag < 5:
+        img_full_url = get_img_full_url()
+        if img_full_url != 0:
+            pic_path = download_img(img_full_url)
             if pic_path != 0:
                 set_wallpaper(pic_path)
                 break
+        else:
+            flag += 1
